@@ -25,6 +25,24 @@ def test_vae(tmpdir, datadir, dm_cls):
 
 
 @pytest.mark.parametrize("dm_cls", [pytest.param(CIFAR10DataModule, id="cifar10")])
+def test_vae_deterministic_kl_loss(tmpdir, datadir, dm_cls):
+    seed_everything()
+
+    dm = dm_cls(data_dir=datadir, batch_size=4)
+    model = VAE(input_height=dm.size()[-1])
+
+    # get single batch from dataset
+    dm.setup()
+    batch = next(iter(dm.train_dataloader()))
+
+    # compute kl 5 times from the same batch
+    kls = [model.step(batch, 0)[1]['kl'] for i in range(5)]
+
+    # check that all kl loss values are the same
+    assert all(kls[0] == kl for kl in kls[1:])
+
+
+@pytest.mark.parametrize("dm_cls", [pytest.param(CIFAR10DataModule, id="cifar10")])
 def test_ae(tmpdir, datadir, dm_cls):
     seed_everything()
 
